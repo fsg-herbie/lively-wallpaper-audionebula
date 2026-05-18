@@ -1,0 +1,178 @@
+{
+	"LANG": {
+		"text": "语言 / Language",
+		"type": "dropdown",
+		"value": 0,
+		"items": ["中文", "English"]
+	},
+	"PARTICLE_CHECK": {
+		"text": "星空颗粒 / Starfield",
+		"type": "checkbox",
+		"value": true
+	},
+	"PARTICLE_NUM": {
+		"text": "星星数量 / Star Count",
+		"value": 500,
+		"type": "slider",
+		"min": 10,
+		"max": 2000,
+		"step": 10
+	},
+	"PARTICLE_BASE_RADIUS": {
+		"text": "星星大小 / Star Size",
+		"value": 1.4,
+		"type": "slider",
+		"min": 0.01,
+		"max": 5.0,
+		"step": 0.01
+	},
+	"DEFAULT_SPEED": {
+		"text": "星星速度 / Star Speed",
+		"value": 2,
+		"type": "slider",
+		"min": 0.01,
+		"max": 50,
+		"step": 0.01
+	},
+	"PARTICLE_COLOR": {
+		"text": "星星颜色 / Star Color",
+		"type": "color",
+		"value": "#D4F9FF"
+	},
+	"FONT_CHECK": {
+		"text": "显示时钟 / Show Clock",
+		"type": "checkbox",
+		"value": true
+	},
+	"HUD_CHECK": {
+		"text": "显示系统监控 HUD / System HUD",
+		"type": "checkbox",
+		"value": true
+	},
+	"NETWORK_CHECK": {
+		"text": "显示网络监控 / Network Monitor",
+		"type": "checkbox",
+		"value": true
+	},
+	"BACKGROUND_CHECK": {
+		"text": "使用背景图 / Background Image",
+		"type": "checkbox",
+		"value": true
+	},
+	"CANVAS_IMAGE": {
+		"text": "背景图片 / Image File",
+		"type": "folderDropdown",
+		"folder": "images",
+		"value": "default.jpg",
+		"filter": "*.jpg|*.png"
+	},
+	"KTV_CHECK": {
+		"text": "KTV氛围灯 / KTV Lighting",
+		"type": "checkbox",
+		"value": true
+	},
+	"KTV_COLOR_STYLE": {
+		"text": "色彩风格 / Color Style",
+		"type": "dropdown",
+		"value": 1,
+		"items": [
+			"梦幻 / Dreamy",
+			"极客 / Geek"
+		]
+	},
+	"KTV_STYLE": {
+		"text": "氛围灯风格 / Effect Style",
+		"type": "dropdown",
+		"value": 0,
+		"items": [
+			"电音光圈 / Aperture",
+			"振膜音圈 / Diaphragm",
+			"魔幻流体 / Fluid Magic"
+		]
+	},
+	"KTV_EFFECT_MODE": {
+		"text": "氛围灯效果 / Effect Mode",
+		"type": "dropdown",
+		"value": 3,
+		"items": [
+			"水波扩散 / Ripple",
+			"能量脉冲 / Pulse",
+			"光晕呼吸 / Glow",
+			"电音律动 / Electro"
+		]
+	},
+	"KTV_INTENSITY": {
+		"text": "音频灵敏度 / Audio Sensitivity",
+		"type": "slider",
+		"value": 1.0,
+		"min": 0.1,
+		"max": 3.0,
+		"step": 0.1
+	},
+	"KTV_RIPPLE_SPEED": {
+		"text": "涟漪速度 / Ripple Speed",
+		"type": "slider",
+		"value": 1.0,
+		"min": 0.2,
+		"max": 3.0,
+		"step": 0.1
+	},
+	"KTV_RIPPLE_SPREAD": {
+		"text": "涟漪范围 / Ripple Spread",
+		"type": "slider",
+		"value": 1.0,
+		"min": 0.2,
+		"max": 3.0,
+		"step": 0.1
+	},
+	"KTV_CORE_SIZE": {
+		"text": "中心光球 / Core Size",
+		"type": "slider",
+		"value": 1.0,
+		"min": 0.2,
+		"max": 3.0,
+		"step": 0.1
+	},
+	"FLUID_SPLAT_RADIUS": {
+		"text": "流体溅射大小 / Fluid Splat Size",
+		"type": "slider",
+		"value": 25,
+		"min": 1,
+		"max": 100,
+		"step": 1
+	},
+	"FLUID_CURL": {
+		"text": "流体湍流强度 / Fluid Vorticity",
+		"type": "slider",
+		"value": 30,
+		"min": 0,
+		"max": 50,
+		"step": 1
+	},
+	"FLUID_DENSITY_DISSIPATION": {
+		"text": "流体染料消散 / Dye Dissipation",
+		"type": "slider",
+		"value": 10,
+		"min": 0,
+		"max": 40,
+		"step": 1
+	},
+	"FLUID_BLOOM_INTENSITY": {
+		"text": "流体泛光强度 / Bloom Intensity",
+		"type": "slider",
+		"value": 80,
+		"min": 10,
+		"max": 200,
+		"step": 1
+	},
+	"FLUID_SHADING": {
+		"text": "流体边缘着色 / Edge Shading",
+		"type": "checkbox",
+		"value": true
+	},
+	"FLUID_COLORFUL": {
+		"text": "流体色彩循环 / Color Cycling",
+		"type": "checkbox",
+		"value": true
+	}
+}

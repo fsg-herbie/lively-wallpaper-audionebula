@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>AudioNebula — 音频律动星空</title>
+    <link rel="stylesheet" href="css/index.css" type="text/css" />
+</head>
+<body>
+<canvas id="c"></canvas>
+<canvas id="fluid-canvas"></canvas>
+
+<div id="hud">
+    <div class="hud-card card-cpu">
+        <div class="hud-card-header"><div class="hud-icon">⚡</div><div class="hud-title" id="hud-title-cpu">CPU</div></div>
+        <div class="hud-value" id="cpu-val">--%</div>
+        <div class="hud-sub" id="cpu-freq"><span class="hud-dot" style="background:#60a5fa"></span>-- GHz · -- °C</div>
+        <div class="hud-bar-track"><div class="hud-bar-fill" id="cpu-bar" style="width:0%"></div></div>
+    </div>
+    <div class="hud-card card-mem">
+        <div class="hud-card-header"><div class="hud-icon">🧠</div><div class="hud-title" id="hud-title-mem">内存 RAM</div></div>
+        <div class="hud-value" id="mem-val">-- GB</div>
+        <div class="hud-sub" id="mem-sub"><span class="hud-dot" style="background:#a78bfa"></span>-- / -- GB 已用</div>
+        <div class="hud-bar-track"><div class="hud-bar-fill" id="mem-bar" style="width:0%"></div></div>
+    </div>
+    <div class="hud-card card-disk">
+        <div class="hud-card-header"><div class="hud-icon">💾</div><div class="hud-title" id="hud-title-disk">磁盘 DISK</div></div>
+        <div class="hud-value" id="disk-val">-- MB/s</div>
+        <div class="hud-sub" id="disk-sub"><span class="hud-dot" style="background:#34d399"></span>R:-- W:-- MB/s</div>
+        <div class="hud-bar-track"><div class="hud-bar-fill" id="disk-bar" style="width:0%"></div></div>
+    </div>
+    <div class="hud-card card-gpu">
+        <div class="hud-card-header"><div class="hud-icon">🎮</div><div class="hud-title" id="hud-title-gpu">GPU</div></div>
+        <div class="hud-value" id="gpu-val">--%</div>
+        <div class="hud-sub" id="gpu-sub"><span class="hud-dot" style="background:#fb923c"></span>-- MHz · -- GB</div>
+        <div class="hud-bar-track"><div class="hud-bar-fill" id="gpu-bar" style="width:0%"></div></div>
+    </div>
+    <div class="hud-card card-net" id="net-card">
+        <div class="hud-card-header"><div class="hud-icon">🌐</div><div class="hud-title" id="hud-title-net">网络 NET</div></div>
+        <div class="hud-value" id="net-val">-- MB/s</div>
+        <div class="hud-sub" id="net-sub"><span class="hud-dot" style="background:#22d3ee"></span>D:-- U:-- MB/s</div>
+        <div class="hud-bar-track"><div class="hud-bar-fill" id="net-bar" style="width:0%"></div></div>
+    </div>
+    <div class="hud-card card-clock" id="clock-card">
+        <div class="hud-card-header"><div class="hud-icon">🕐</div><div class="hud-title" id="hud-title-clock">时钟 CLOCK</div></div>
+        <div class="hud-value" id="clock-val">00:00:00</div>
+        <div class="hud-sub" id="clock-sub"></div>
+    </div>
+</div>
+
+<script src="js/i18n.js"></script>
+<script src="js/fluid.js"></script>
+<script src="js/index.js"></script>
+<script type="text/javascript">
+"use strict";
+
+// Lively API — audio listener
+window.livelyAudioListener = function(audioArray){
+    audioReceived = true;
+    if (!y.KTV_CHECK) return;
+    const raw = audioArray;
+    const N = raw.length;
+    const nyquist = 22050;
+    const hzPerBin = nyquist / N;
+
+    // 7-band frequency analysis
+    const a = audioAnalysis;
+    for (let b = 0; b < 7; b++) {
+        const loHz = BAND_RANGES_HZ[b][0], hiHz = BAND_RANGES_HZ[b][1];
+        let lo = Math.max(1, Math.floor(loHz / hzPerBin));
+        let hi = Math.min(N - 1, Math.floor(hiHz / hzPerBin));
+        if (lo > hi) { lo = hi = Math.max(1, Math.floor(loHz / hzPerBin)); }
+        let sum = 0, count = hi - lo + 1;
+        for (let j = lo; j <= hi; j++) sum += raw[j];
+        a.rawBands[b] = sum / Math.max(1, count);
+    }
+
+    // spectral centroid (across all bins skip DC)
+    let ws = 0, tw = 0;
+    for (let j = 1; j < N; j++) { ws += raw[j] * j; tw += raw[j]; }
+    a.centroidBin = tw > 0 ? ws / tw : 0;
+    a.centroid = a.centroidBin / (N - 1);
+
+    // process 7 bands: pow + soft norm + smoothing + peaks
+    for (let b = 0; b < 7; b++) {
+        let v = Math.pow(a.rawBands[b] * y.KTV_INTENSITY, 0.55);
+        v = softNorm(v);
+        a.bands[b] = v;
+        a.smoothed[b] = lerp(a.smoothed[b], v, 0.6);
+        if (v > a.peaks[b]) { a.peaks[b] = v; a.peakTimer[b] = 28; }
+    }
+    for (let b = 0; b < 7; b++) {
+        if (a.peakTimer[b] > 0) a.peakTimer[b]--;
+        else a.peaks[b] *= 0.9;
+    }
+
+    // total energy (weighted)
+    a.totalEnergy = 0;
+    for (let b = 0; b < 7; b++) a.totalEnergy += a.smoothed[b] * BAND_WEIGHTS[b];
+
+    // legacy 32-band (电音光圈 + 魔幻流体)
+    const numBands = 32;
+    const binSize = Math.max(1, Math.floor(N / numBands));
+    for (let i = 0; i < numBands; i++) {
+        let sum = 0;
+        let start = i * binSize;
+        let end = (i === numBands - 1) ? N : start + binSize;
+        for (let j = start; j < end; j++) sum += raw[j];
+        let avg = sum / (end - start);
+        avg = Math.pow(avg * y.KTV_INTENSITY, 0.55);
+        avg = Math.min(1, avg);
+        audioState.bands[i] = lerp(audioState.bands[i], avg, 0.6);
+        if (avg > audioState.peaks[i]) { audioState.peaks[i] = avg; audioState.peakTimer[i] = 28; }
+    }
+    for (let i = 0; i < numBands; i++) {
+        if (audioState.peakTimer[i] > 0) audioState.peakTimer[i]--;
+        else audioState.peaks[i] *= 0.9;
+    }
+};
+
+// Lively API — system information
+window.livelySystemInformation = function(info){
+    try {
+        const d = JSON.parse(info);
+        if(d.CurrentCpu !== undefined) tgt.cpu = d.CurrentCpu;
+        if(d.CurrentGpu3D !== undefined) tgt.gpu = d.CurrentGpu3D;
+        if(d.GPUCoreClock !== undefined) tgt.gpuMhz = d.GPUCoreClock;
+        if(d.UsedVram !== undefined) tgt.gpuVram = d.UsedVram / 1024;
+        if(d.TotalVram !== undefined) state.gpu.vramTotal = Math.round(d.TotalVram / 1024);
+        if(d.TotalRam !== undefined) state.mem.total = Math.round(d.TotalRam / 1024);
+        if(d.CurrentRamAvail !== undefined) tgt.memUsed = (d.TotalRam - d.CurrentRamAvail) / 1024;
+        if(d.CurrentNetDown !== undefined) tgt.netDown = d.CurrentNetDown / (1024*1024);
+        if(d.CurrentNetUp !== undefined) tgt.netUp = d.CurrentNetUp / (1024*1024);
+    } catch(e){}
+};
+
+// Lively API — property change
+window.livelyPropertyListener = function(key, val){
+    y[key] = val;
+    if(key === "LANG") { setLang(val === 0 ? "zh" : "en"); updateHUDTitles(); }
+    if(key === "PARTICLE_NUM") resetParticles();
+    if(key === "DEFAULT_SPEED") P = val;
+    if(key === "CANVAS_IMAGE" || key === "BACKGROUND_CHECK") loadBackground();
+    if(key === "HUD_CHECK" || key === "NETWORK_CHECK" || key === "FONT_CHECK") updateHUDVisibility();
+    if(key === "KTV_CHECK" || key === "KTV_STYLE" || key === "KTV_EFFECT_MODE" || key === "KTV_INTENSITY" || key === "KTV_RIPPLE_SPEED" || key === "KTV_RIPPLE_SPREAD" || key === "KTV_CORE_SIZE") { ripples = []; }
+    // Fluid properties
+    if(key === "FLUID_SPLAT_RADIUS" && typeof fluidSetConfig === 'function') fluidSetConfig('SPLAT_RADIUS', val / 100);
+    if(key === "FLUID_CURL" && typeof fluidSetConfig === 'function') fluidSetConfig('CURL', val);
+    if(key === "FLUID_DENSITY_DISSIPATION" && typeof fluidSetConfig === 'function') fluidSetConfig('DENSITY_DISSIPATION', val / 10);
+    if(key === "FLUID_BLOOM_INTENSITY" && typeof fluidSetConfig === 'function') fluidSetConfig('BLOOM_INTENSITY', val / 100);
+    if(key === "FLUID_SHADING" && typeof fluidSetConfig === 'function') fluidSetConfig('SHADING', val);
+    if(key === "FLUID_COLORFUL" && typeof fluidSetConfig === 'function') fluidSetConfig('COLORFUL', val);
+    animate();
+};
+
+// Lively API — playback changed
+window.livelyWallpaperPlaybackChanged = function(t){
+    JSON.parse(t).IsPaused ? cancelAnimationFrame(M) : animate();
+};
+
+// HUD drag
+hud.addEventListener("mousedown", e => {
+    if(!y.HUD_CHECK) return;
+    isDragging = true;
+    hud.style.right = "auto";
+    hud.style.bottom = "auto";
+    hud.style.left = hud.offsetLeft + "px";
+    hud.style.top = hud.offsetTop + "px";
+    prevX = e.clientX; prevY = e.clientY;
+});
+document.addEventListener("mousemove", e => {
+    if(!isDragging) return;
+    hud.style.left = (hud.offsetLeft + e.clientX - prevX) + "px";
+    hud.style.top  = (hud.offsetTop  + e.clientY - prevY) + "px";
+    prevX = e.clientX; prevY = e.clientY;
+});
+document.addEventListener("mouseup", () => {
+    if(isDragging){
+        isDragging = false;
+        localStorage.setItem("hudPosition", JSON.stringify({left: hud.style.left, top: hud.style.top}));
+    }
+});
+
+// Resize
+window.addEventListener("resize", resize);
+</script>
+</body>
+</html>

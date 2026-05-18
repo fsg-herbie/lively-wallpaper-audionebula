@@ -1,0 +1,17 @@
+{
+  "AppVersion": "1.0.0",
+  "Title": "AudioNebula",
+  "Thumbnail": "preview_image1.png",
+  "Preview": "preview.gif",
+  "Desc": "疯狂码农-这是一个由Lively Wallpaper驱动的 星空颗粒飘动与仪表台+扬声器KTV魔幻灯的HTML项目",
+  "Author": "疯狂码农(fsg-Herbie)",
+  "License": "MIT",
+  "Contact": "https://github.com/fsg-herbie/lively-wallpaper-audionebula",
+  "Type": 1,
+  "FileName": "index.html",
+  "Arguments": "--system-information --audio --pause-event true",
+  "IsAbsolutePath": false,
+  "Id": null,
+  "Tags": null,
+  "Version": 0
+}
