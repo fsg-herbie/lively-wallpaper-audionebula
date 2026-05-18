@@ -9,7 +9,7 @@ An audio-reactive animated wallpaper for Lively Wallpaper. Real-time 7-band audi
 
 ## 效果预览 / Preview
 
-[▶ 观看演示视频 / Watch Demo](preview.mp4)
+[▶ 观看演示视频 / bilibili](https://www.bilibili.com/video/BV1yALM6TESe)
 
 <video src="https://github.com/user-attachments/assets/51fa4469-a4a0-4241-84cf-65333ac4bb91" controls="controls" width="100%" height="auto" autoplay="autoplay" muted="muted" loop="loop"></video>
 
