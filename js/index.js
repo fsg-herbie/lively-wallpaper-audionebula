@@ -58,54 +58,8 @@ function softNorm(x){ return x / (x + 0.4); }
 function cHue(h) { return y.KTV_COLOR_STYLE ? 175 + (h % 360) / 360 * 75 : h; }
 function cSat(s) { return y.KTV_COLOR_STYLE ? Math.round(s * 0.5) : s; }
 
-let audioReceived = false;
 let synthTimer = 0;
 
-function synthAudio() {
-    let t = synthTimer * 0.04;
-    let beat4 = (t % 1.0) / 1.0;
-    let beat = Math.floor(t / 0.5) % 2;
-
-    let kick = (beat4 < 0.15 && beat === 0) ? Math.pow(1 - beat4 / 0.15, 2) : 0;
-    let snare = (beat4 < 0.08 && beat === 1) ? (1 - beat4 / 0.08) : 0;
-    let hihat = ((t % 0.125) < 0.04) ? (1 - (t % 0.125) / 0.04) : 0;
-
-    const raw = audioAnalysis.rawBands;
-    raw[0] = kick * 0.85 + 0.005;
-    raw[1] = kick * 0.6 + 0.005;
-    raw[2] = kick * 0.2 + snare * 0.55 + 0.003;
-    raw[3] = snare * 0.45 + 0.003;
-    raw[4] = snare * 0.55 + 0.003;
-    raw[5] = hihat * 0.7 + 0.002;
-    raw[6] = hihat * 0.5 + 0.002;
-
-    for (let b = 0; b < 7; b++) {
-        let v = Math.pow(raw[b] * y.KTV_INTENSITY, 0.55);
-        v = softNorm(v);
-        audioAnalysis.bands[b] = v;
-        audioAnalysis.smoothed[b] = lerp(audioAnalysis.smoothed[b], v, 0.6);
-    }
-    // compute aggregate metrics (mirrors livelyAudioListener)
-    let tw = 0;
-    audioAnalysis.totalEnergy = 0;
-    for (let b = 0; b < 7; b++) audioAnalysis.totalEnergy += audioAnalysis.smoothed[b] * BAND_WEIGHTS[b];
-    // rough centroid estimate from band centers
-    const BAND_CENTER_HZ = [40, 95, 215, 650, 2500, 6000, 14000];
-    let ws = 0;
-    for (let b = 0; b < 7; b++) { ws += audioAnalysis.smoothed[b] * BAND_CENTER_HZ[b]; tw += audioAnalysis.smoothed[b]; }
-    audioAnalysis.centroid = tw > 0 ? Math.min(1, Math.max(0, (ws / tw - 40) / 14000)) : 0;
-
-    // legacy 32-band synth (original formula)
-    for (let i = 0; i < 32; i++) {
-        let v;
-        if (i < 4)       v = kick + 0.03;
-        else if (i < 10)  v = kick * 0.5 + 0.03;
-        else              v = kick * 0.15 + 0.02;
-        v = Math.pow(v * y.KTV_INTENSITY, 0.55);
-        v = Math.min(1, v);
-        audioState.bands[i] = lerp(audioState.bands[i], v, 0.4);
-    }
-}
 
 function setBar(id, pct){ const el=document.getElementById(id); if(el) el.style.width=Math.min(100,Math.max(0,pct))+'%'; }
 function setText(id, txt){ const el=document.getElementById(id); if(el) el.innerHTML = txt; }
@@ -228,7 +182,6 @@ function drawKTVBars() {
     if (!y.KTV_CHECK) return;
 
     synthTimer++;
-    if (!audioReceived && synthTimer > 90) synthAudio();
 
     const ctx = L;
     const cx = m / 2, cy = N / 2;
@@ -304,7 +257,7 @@ function drawKTVBars() {
 
         // center orb
         if (coreIntensity > 0.015) {
-            let cr = (25 + coreIntensity * 185) * coreMul;
+            let cr = (25 + coreIntensity * 185 + vocalEnergy * 60) * coreMul;
             let grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, cr);
             grad.addColorStop(0, `hsla(${cHue(orbHue)}, ${cSat(80)}%, 97%, ${coreIntensity * 0.9})`);
             grad.addColorStop(0.15, `hsla(${cHue(orbHue)}, ${cSat(90)}%, 72%, ${coreIntensity * 0.6})`);

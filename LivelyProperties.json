@@ -74,7 +74,7 @@
 	"KTV_COLOR_STYLE": {
 		"text": "色彩风格 / Color Style",
 		"type": "dropdown",
-		"value": 1,
+		"value": 0,
 		"items": [
 			"梦幻 / Dreamy",
 			"极客 / Geek"
