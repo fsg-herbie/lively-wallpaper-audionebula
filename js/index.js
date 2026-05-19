@@ -19,8 +19,13 @@ let y = {
     KTV_RIPPLE_SPEED: 1.0,
     KTV_RIPPLE_SPREAD: 1.0,
     KTV_CORE_SIZE: 1.0,
+    MUSIC_MODE: 1,
+    MUSIC_OPACITY: 55,
     LANG: 0
 };
+
+let musicTrack = null;
+let audioStarted = false;
 
 let u = document.getElementById("c"),
     L = u.getContext("2d"),
@@ -110,6 +115,21 @@ function updateHUDVisibility(){
     document.getElementById("clock-card").style.display = y.FONT_CHECK ? "block" : "none";
 }
 
+function updateLoadingText() {
+    const el = document.getElementById("loading-text");
+    if (el) el.textContent = t("loading.wait");
+}
+
+function updateMusicInfoVisibility(){
+    const el = document.getElementById("music-info");
+    if (!el) return;
+    if (y.MUSIC_MODE === 0 && musicTrack && musicTrack.title) {
+        el.classList.add("visible");
+    } else {
+        el.classList.remove("visible");
+    }
+}
+
 const saved = localStorage.getItem("hudPosition");
 let hudPosValid = false;
 if(saved){
@@ -178,6 +198,43 @@ function getCentroid(bands) {
     return tw > 0 ? ws / tw : 0;
 }
 
+function drawCenterOrb(ctx, cx, cy, radius, intensity, hue) {
+    ctx.save();
+    if (y.MUSIC_MODE === 0 && musicTrack && musicTrack.image) {
+        const albumAlpha = y.MUSIC_OPACITY / 100;
+        ctx.globalCompositeOperation = "source-over";
+        ctx.globalAlpha = albumAlpha + intensity * 0.15;
+        // clip to circle and draw album art
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+        ctx.clip();
+        ctx.drawImage(musicTrack.image, cx - radius, cy - radius, radius * 2, radius * 2);
+        ctx.restore();
+        // glow ring (unclipped)
+        ctx.globalAlpha = intensity * 0.4 * albumAlpha;
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius + 2, 0, Math.PI * 2);
+        ctx.strokeStyle = `hsla(${hue}, 80%, 70%, ${intensity * 0.5 * albumAlpha})`;
+        ctx.lineWidth = 2;
+        ctx.shadowColor = `hsla(${hue}, 80%, 70%, ${0.35 * albumAlpha})`;
+        ctx.shadowBlur = 12;
+        ctx.stroke();
+    } else {
+        const orbAlpha = Math.min(1, (y.MUSIC_OPACITY + 30) / 100);
+        let grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+        grad.addColorStop(0, `hsla(${cHue(hue)}, ${cSat(80)}%, 97%, ${intensity * 0.9 * orbAlpha})`);
+        grad.addColorStop(0.15, `hsla(${cHue(hue)}, ${cSat(90)}%, 72%, ${intensity * 0.6 * orbAlpha})`);
+        grad.addColorStop(0.4, `hsla(${cHue((hue + 15) % 360)}, ${cSat(100)}%, 50%, ${intensity * 0.22 * orbAlpha})`);
+        grad.addColorStop(1, "transparent");
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
 function drawKTVBars() {
     if (!y.KTV_CHECK) return;
 
@@ -210,21 +267,9 @@ function drawKTVBars() {
         let centroid = getCentroid(bands);
         let orbHue = (centroid * 7 + synthTimer * 1.8) % 360;
 
-        // center orb (same as style 0, drawn before fluid)
         if (ci > 0.02) {
-            ctx.save();
-            ctx.globalCompositeOperation = "lighter";
             let cr = (30 + ci * 180) * coreMul;
-            let grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, cr);
-            grad.addColorStop(0, `hsla(${cHue(orbHue)}, ${cSat(80)}%, 97%, ${ci * 0.9})`);
-            grad.addColorStop(0.15, `hsla(${cHue(orbHue)}, ${cSat(90)}%, 72%, ${ci * 0.6})`);
-            grad.addColorStop(0.4, `hsla(${cHue((orbHue + 15) % 360)}, ${cSat(100)}%, 50%, ${ci * 0.22})`);
-            grad.addColorStop(1, "transparent");
-            ctx.fillStyle = grad;
-            ctx.beginPath();
-            ctx.arc(cx, cy, cr, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.restore();
+            drawCenterOrb(ctx, cx, cy, cr, ci, orbHue);
         }
 
         if (trigger && typeof fluidSplatAtCenter === 'function') {
@@ -255,18 +300,9 @@ function drawKTVBars() {
         // source-over: alpha = opacity over black, no additive blowout
         ctx.globalCompositeOperation = "source-over";
 
-        // center orb
         if (coreIntensity > 0.015) {
             let cr = (25 + coreIntensity * 185 + vocalEnergy * 60) * coreMul;
-            let grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, cr);
-            grad.addColorStop(0, `hsla(${cHue(orbHue)}, ${cSat(80)}%, 97%, ${coreIntensity * 0.9})`);
-            grad.addColorStop(0.15, `hsla(${cHue(orbHue)}, ${cSat(90)}%, 72%, ${coreIntensity * 0.6})`);
-            grad.addColorStop(0.4, `hsla(${cHue((orbHue + 15) % 360)}, ${cSat(100)}%, 50%, ${coreIntensity * 0.22})`);
-            grad.addColorStop(1, "transparent");
-            ctx.fillStyle = grad;
-            ctx.beginPath();
-            ctx.arc(cx, cy, cr, 0, Math.PI * 2);
-            ctx.fill();
+            drawCenterOrb(ctx, cx, cy, cr, coreIntensity, orbHue);
         }
 
         // per-channel triggers
@@ -406,19 +442,10 @@ function drawKTVBars() {
     ctx.save();
     ctx.globalCompositeOperation = "source-over";
 
-    // center orb: bass-driven size + vocal pulse
     let orbPulse = vocalEnergy * 1.2;
     if (coreIntensity > 0.02) {
         let cr = (30 + coreIntensity * 180 + orbPulse * 50) * coreMul;
-        let grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, cr);
-        grad.addColorStop(0, `hsla(${cHue(hue)}, ${cSat(80)}%, 97%, ${coreIntensity * 0.9})`);
-        grad.addColorStop(0.15, `hsla(${cHue(hue)}, ${cSat(90)}%, 72%, ${coreIntensity * 0.6})`);
-        grad.addColorStop(0.4, `hsla(${cHue((hue + 15) % 360)}, ${cSat(100)}%, 50%, ${coreIntensity * 0.22})`);
-        grad.addColorStop(1, "transparent");
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.arc(cx, cy, cr, 0, Math.PI * 2);
-        ctx.fill();
+        drawCenterOrb(ctx, cx, cy, cr, coreIntensity, hue);
     }
 
     // bass ripple trigger
@@ -587,5 +614,6 @@ resize();
 resetParticles();
 updateHUDVisibility();
 updateHUDTitles();
+updateLoadingText();
 pulseInitRing();
 animate();

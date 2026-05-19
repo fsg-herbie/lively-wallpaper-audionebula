@@ -71,6 +71,12 @@
 		"type": "checkbox",
 		"value": true
 	},
+	"MUSIC_MODE": {
+		"text": "中心效果 / Core Visual",
+		"type": "dropdown",
+		"value": 0,
+		"items": ["音频图像 / Album Art", "跳动光球 / Bouncing Orb"]
+	},
 	"KTV_COLOR_STYLE": {
 		"text": "色彩风格 / Color Style",
 		"type": "dropdown",
@@ -124,6 +130,14 @@
 		"min": 0.2,
 		"max": 3.0,
 		"step": 0.1
+	},
+	"MUSIC_OPACITY": {
+		"text": "中心透明度 / Core Opacity",
+		"type": "slider",
+		"value": 50,
+		"min": 10,
+		"max": 100,
+		"step": 1
 	},
 	"KTV_CORE_SIZE": {
 		"text": "中心光球 / Core Size",

@@ -8,7 +8,8 @@ const i18nStrings = {
         "hud.gpu": "GPU",
         "hud.net": "网络 NET",
         "hud.clock": "时钟 CLOCK",
-        "tick.used": "已用"
+        "tick.used": "已用",
+        "loading.wait": "等待音频流..."
     },
     en: {
         "hud.cpu": "CPU",
@@ -17,7 +18,8 @@ const i18nStrings = {
         "hud.gpu": "GPU",
         "hud.net": "NET",
         "hud.clock": "CLOCK",
-        "tick.used": "Used"
+        "tick.used": "Used",
+        "loading.wait": "Waiting for audio..."
     }
 };
 

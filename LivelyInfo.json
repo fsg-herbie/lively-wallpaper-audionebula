@@ -9,7 +9,7 @@
   "Contact": "https://github.com/fsg-herbie/lively-wallpaper-audionebula",
   "Type": 1,
   "FileName": "index.html",
-  "Arguments": "--system-information --audio --pause-event true",
+  "Arguments": "--system-information --audio --pause-event true --system-nowplaying",
   "IsAbsolutePath": false,
   "Id": null,
   "Tags": null,

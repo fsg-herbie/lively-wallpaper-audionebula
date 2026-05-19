@@ -47,14 +47,56 @@
     </div>
 </div>
 
+<div id="loading-indicator" class="visible">
+    <div id="loading-ring"></div>
+    <div id="loading-text"></div>
+</div>
+
+<div id="music-info">
+    <div id="music-title"></div>
+    <div id="music-artist"></div>
+</div>
+
 <script src="js/i18n.js"></script>
 <script src="js/fluid.js"></script>
 <script src="js/index.js"></script>
 <script type="text/javascript">
 "use strict";
 
+// Lively API — now-playing track info
+window.livelyCurrentTrack = function(data){
+    try {
+        const obj = JSON.parse(data);
+        if (obj != null && obj.Title) {
+            musicTrack = {
+                title: obj.Title || "",
+                artist: obj.Artist || "",
+                album: obj.AlbumTitle || "",
+                thumbnail: obj.Thumbnail || null
+            };
+            if (obj.Thumbnail) {
+                const img = new Image();
+                img.onload = function() { musicTrack.image = img; };
+                img.src = "data:image/png;base64," + obj.Thumbnail;
+            }
+            document.getElementById("music-title").textContent = obj.Title || "";
+            document.getElementById("music-artist").textContent = obj.Artist || "";
+        } else {
+            musicTrack = null;
+            document.getElementById("music-title").textContent = "";
+            document.getElementById("music-artist").textContent = "";
+        }
+        updateMusicInfoVisibility();
+    } catch(e) {}
+};
+
 // Lively API — audio listener
 window.livelyAudioListener = function(audioArray){
+    if (!audioStarted) {
+        audioStarted = true;
+        const loadingEl = document.getElementById("loading-indicator");
+        if (loadingEl) loadingEl.classList.remove("visible");
+    }
     if (!y.KTV_CHECK) return;
     const raw = audioArray;
     const N = raw.length;
@@ -141,6 +183,7 @@ window.livelyPropertyListener = function(key, val){
     if(key === "CANVAS_IMAGE" || key === "BACKGROUND_CHECK") loadBackground();
     if(key === "HUD_CHECK" || key === "NETWORK_CHECK" || key === "FONT_CHECK") updateHUDVisibility();
     if(key === "KTV_CHECK" || key === "KTV_STYLE" || key === "KTV_EFFECT_MODE" || key === "KTV_INTENSITY" || key === "KTV_RIPPLE_SPEED" || key === "KTV_RIPPLE_SPREAD" || key === "KTV_CORE_SIZE") { ripples = []; }
+    if(key === "MUSIC_MODE") { updateMusicInfoVisibility(); }
     // Fluid properties
     if(key === "FLUID_SPLAT_RADIUS" && typeof fluidSetConfig === 'function') fluidSetConfig('SPLAT_RADIUS', val / 100);
     if(key === "FLUID_CURL" && typeof fluidSetConfig === 'function') fluidSetConfig('CURL', val);
